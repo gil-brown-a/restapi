@@ -1,0 +1,20 @@
+pipeline {
+    agent any
+    stages {
+        stage('Build') {
+            steps {
+                git branch: 'main', credentialsId: 'MyRest', url: 'https://github.com/gil-brown-a/restapi.git'
+                sh "docker build . -t myrest:${currentBuild.number}"
+                sh "docker run -d myrest:${currentBuild.number}"
+                sh "pytest tests.py --junitxml=reports/TEST-${currentBuild.number}.xml"
+                sh "docker kill $(docker ps | grep myrest: | awk '{print $$1}')"
+            }
+
+            post {
+                success {
+                    junit '**/reports/TEST-*.xml'
+                }
+            }
+        }
+    }
+}
